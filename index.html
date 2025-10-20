@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Schedule Optimization</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #2D3748;
+            --secondary: #4A5568;
+            --accent: #3182CE;
+            --success: #38A169;
+            --warning: #D69E2E;
+            --danger: #E53E3E;
+            --light: #F7FAFC;
+            --dark: #1A202C;
+            --slack-purple: #4A154B;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--success);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        
+        @media (max-width: 1100px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            background: var(--primary);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .card-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-content {
+            padding: 25px;
+        }
+        
+        /* Traditional Calendar Styling */
+        .traditional-calendar {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .calendar-header {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .calendar-header th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border-right: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .calendar-header th:last-child {
+            border-right: none;
+        }
+        
+        .calendar-time-col {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: var(--secondary);
+            padding: 12px 15px;
+            border-right: 1px solid #e9ecef;
+            width: 100px;
+        }
+        
+        .calendar-slot {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+            border-right: 1px solid #e9ecef;
+            vertical-align: top;
+            height: 80px;
+        }
+        
+        .calendar-slot:last-child {
+            border-right: none;
+        }
+        
+        .calendar-event {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            position: relative;
+            padding-left: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .calendar-event:hover {
+            transform: scale(1.02);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+        }
+        
+        .calendar-event:before {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+        
+        .event-confirmed {
+            background: #e8f5e9;
+            border-left: 3px solid var(--success);
+        }
+        
+        .event-confirmed:before {
+            background: var(--success);
+        }
+        
+        .event-priority {
+            background: #fff8e1;
+            border-left: 3px solid var(--warning);
+        }
+        
+        .event-priority:before {
+            background: var(--warning);
+        }
+        
+        .event-urgent {
+            background: #ffebee;
+            border-left: 3px solid var(--danger);
+        }
+        
+        .event-urgent:before {
+            background: var(--danger);
+        }
+        
+        .event-buffer {
+            background: #f3e5f5;
+            border-left: 3px solid #9c27b0;
+        }
+        
+        .event-buffer:before {
+            background: #9c27b0;
+        }
+        
+        .event-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+            font-size: 0.9rem;
+        }
+        
+        .event-time {
+            font-size: 0.75rem;
+            color: var(--secondary);
+        }
+        
+        .event-platform {
+            font-size: 0.7rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        
+        /* Professional Messages */
+        .messages-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .message {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .message-to {
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .message-subject {
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+        
+        .message-body {
+            line-height: 1.6;
+            color: var(--dark);
+        }
+        
+        .message-highlight {
+            background: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid var(--accent);
+        }
+        
+        .remote-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #e3f2fd;
+            color: var(--accent);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        /* Summary Section */
+        .summary-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            border-left: 4px solid var(--success);
+        }
+        
+        .summary-box h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .summary-box p {
+            line-height: 1.7;
+            color: var(--dark);
+            margin-bottom: 15px;
+        }
+        
+        /* Video Section */
+        .video-container {
+            background: #1a202c;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            margin-bottom: 20px;
+        }
+        
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .video-info {
+            text-align: center;
+        }
+        
+        .video-info h3 {
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: var(--accent);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
+        }
+        
+        .btn:hover {
+            background: #2C5AA0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(49, 130, 206, 0.4);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: var(--secondary);
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .calendar-legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85rem;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Executive Schedule Optimization</h1>
+            <p class="subtitle">Remote Meeting Schedule & Priority Management</p>
+            <div class="status-badge">
+                <i class="fas fa-check-circle"></i>
+                All Conflicts Resolved • Remote Meetings Confirmed
+            </div>
+        </header>
+        
+        <h2 class="section-title">Part 1: Professional Communications</h2>
+        <div class="dashboard">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-envelope"></i> Messages to Stakeholders</h2>
+                </div>
+                <div class="card-content">
+                    <div class="messages-container">
+                        <div class="message">
+                            <div class="message-header">
+                                <div class="message-to">To: Joe (CEO)</div>
+                                <div class="message-subject">Re: Today's Remote Schedule & Requests</div>
+                            </div>
+                            <div class="message-body">
+                                <p>Joe, I've optimized today's remote schedule to accommodate all your requests while protecting your key priorities:</p>
+                                <div class="message-highlight">
+                                    • Your remote meeting with Luna is scheduled for 10:45 AM, right before the Acme workshop<br>
+                                    • Paul is confirmed for 10:00 AM video call to discuss invoices<br>
+                                    • Lou will present his report during your 10:45 AM sync<br>
+                                    • Your 4 PM departure remains protected
+                                </div>
+                                <p>All meetings are configured for remote participation with appropriate video links sent to all participants.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="message">
+                            <div class="message-header">
+                                <div class="message-to">To: Rick (CSO)</div>
+                                <div class="message-subject">Re: Urgent 4 PM Meeting Request</div>
+                            </div>
+                            <div class="message-body">
+                                <p>Rick, I see your request for an urgent remote meeting with Joe and Ben at 4 PM today.</p>
+                                <div class="message-highlight">
+                                    Due to Joe's pre-existing hard stop at 4 PM, I've scheduled this remote meeting for tomorrow at 9:00 AM with all parties confirmed.
+                                </div>
+                                <p>Zoom links and calendar invites have been sent to all participants for tomorrow's session.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="message">
+                            <div class="message-header">
+                                <div class="message-to">To: Frank</div>
+                                <div class="message-subject">Re: 2:30 PM Internal Alignment Meeting</div>
+                            </div>
+                            <div class="message-body">
+                                <p>Frank, regarding your 2:30 PM remote alignment meeting to discuss workshop outcomes:</p>
+                                <div class="message-highlight">
+                                    Annie (Chief of Staff) will attend remotely on Joe's behalf and integrate the key outcomes directly into the 3 PM Executive Meeting agenda.
+                                </div>
+                                <p>The Teams meeting link has been shared with Annie and your team.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-users"></i> Messages to Meeting Participants</h2>
+                </div>
+                <div class="card-content">
+                    <div class="messages-container">
+                        <div class="message">
+                            <div class="message-header">
+                                <div class="message-to">To: Luna</div>
+                                <div class="message-subject">Remote Pre-Workshop Sync at 10:45 AM</div>
+                            </div>
+                            <div class="message-body">
+                                <p>Luna, Joe would like to sync with you remotely for 15 minutes before the Acme workshop to align on strategy.</p>
+                                <div class="message-highlight">
+                                    Meeting: Pre-Workshop Strategy Sync<br>
+                                    Time: Today at 10:45 AM<br>
+                                    Duration: 15 minutes<br>
+                                    Platform: Zoom <span class="remote-badge"><i class="fas fa-video"></i> REMOTE</span>
+                                </div>
+                                <p>Lou will also join remotely to present his latest report. Zoom link has been added to the calendar invite.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="message">
+                            <div class="message-header">
+                                <div class="message-to">To: Paul</div>
+                                <div class="message-subject">Remote Invoice Discussion at 10:00 AM</div>
+                            </div>
+                            <div class="message-body">
+                                <p>Paul, Joe has allocated time to discuss the outstanding invoices with you remotely.</p>
+                                <div class="message-highlight">
+                                    Meeting: Outstanding Invoices Review<br>
+                                    Time: Today at 10:00 AM<br>
+                                    Duration: 15 minutes<br>
+                                    Platform: Teams <span class="remote-badge"><i class="fas fa-video"></i> REMOTE</span>
+                                </div>
+                                <p>Please have the relevant documents ready for screen sharing during our focused discussion.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="message">
+                            <div class="message-header">
+                                <div class="message-to">To: Lou</div>
+                                <div class="message-subject">Remote Report Presentation at 10:45 AM</div>
+                            </div>
+                            <div class="message-body">
+                                <p>Lou, Joe needs your latest report for the Acme workshop.</p>
+                                <div class="message-highlight">
+                                    Please join the 10:45 AM remote sync with Joe and Luna to present your report findings via screen share.
+                                </div>
+                                <p>This will ensure everyone is aligned before the client workshop at 11 AM. Zoom link is in the calendar invite.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h2 class="section-title">Part 2: Updated CEO Schedule</h2>
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="far fa-calendar-alt"></i> Updated CEO Schedule - Monday</h2>
+                <div class="status-badge">All Meetings Remote</div>
+            </div>
+            <div class="card-content">
+                <table class="traditional-calendar">
+                    <thead class="calendar-header">
+                        <tr>
+                            <th>Time</th>
+                            <th>Monday - Remote Meetings</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="calendar-time-col">8:00 - 9:00 AM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-confirmed">
+                                    <div class="event-title">Acme Corp Internal Meeting</div>
+                                    <div class="event-time">Remote Strategy Session</div>
+                                    <div class="event-platform">Microsoft Teams</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="calendar-time-col">9:00 - 10:00 AM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-priority">
+                                    <div class="event-title">Monthly Finance Review</div>
+                                    <div class="event-time">Remote 1:1 with Tonya (CFO)</div>
+                                    <div class="event-platform">Zoom</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="calendar-time-col">10:00 - 10:15 AM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-confirmed">
+                                    <div class="event-title">Video Call with Paul</div>
+                                    <div class="event-time">Outstanding Invoices Review</div>
+                                    <div class="event-platform">Microsoft Teams</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="calendar-time-col">10:15 - 10:45 AM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-buffer">
+                                    <div class="event-title">Strategic Buffer</div>
+                                    <div class="event-time">Remote Preparation Time</div>
+                                    <div class="event-platform">Focus Time</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="calendar-time-col">10:45 - 11:00 AM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-priority">
+                                    <div class="event-title">Pre-Workshop Sync</div>
+                                    <div class="event-time">Remote with Luna & Lou</div>
+                                    <div class="event-platform">Zoom</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="calendar-time-col">11:00 AM - 1:00 PM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-priority">
+                                    <div class="event-title">Acme Corp Product Workshop</div>
+                                    <div class="event-time">PRIORITY #1 - Remote Client Meeting</div>
+                                    <div class="event-platform">Zoom Webinar</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="calendar-time-col">1:00 - 2:00 PM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-confirmed">
+                                    <div class="event-title">Lunch Break</div>
+                                    <div class="event-time">Protected Time - Remote</div>
+                                    <div class="event-platform">No Meetings</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="calendar-time-col">2:00 - 2:30 PM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-confirmed">
+                                    <div class="event-title">Internal with Annie (CoS)</div>
+                                    <div class="event-time">Remote Rescheduled from 8 AM</div>
+                                    <div class="event-platform">Microsoft Teams</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="calendar-time-col">2:30 - 3:00 PM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-buffer">
+                                    <div class="event-title">Strategic Buffer</div>
+                                    <div class="event-time">Remote Focus Time</div>
+                                    <div class="event-platform">Preparation</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="calendar-time-col">3:00 - 4:00 PM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-priority">
+                                    <div class="event-title">Executive Weekly Meeting</div>
+                                    <div class="event-time">Full Remote Leadership Team</div>
+                                    <div class="event-platform">Zoom</div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="calendar-time-col">4:00 PM</td>
+                            <td class="calendar-slot">
+                                <div class="calendar-event event-urgent">
+                                    <div class="event-title">Departure</div>
+                                    <div class="event-time">HARD STOP - Remote Day Ends</div>
+                                    <div class="event-platform">No Further Meetings</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #e8f5e9;"></div>
+                        <span>Confirmed</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #fff8e1;"></div>
+                        <span>Priority</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ffebee;"></div>
+                        <span>Urgent</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f3e5f5;"></div>
+                        <span>Buffer</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h2 class="section-title">Part 3: Prioritization Summary</h2>
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-chart-line"></i> Executive Summary</h2>
+            </div>
+            <div class="card-content">
+                <div class="summary-box">
+                    <h3>Prioritization Strategy</h3>
+                    <p>I prioritized the CEO's time by first protecting his stated top priorities—the Acme Workshop and Finance Review—and his 4 PM hard stop. All meetings were configured for remote participation with appropriate video platforms specified for each session.</p>
+                    <p>Conflicting requests were resolved by creating focused remote time blocks, leveraging the Chief of Staff for appropriate virtual meetings, and scheduling urgent matters for the next business day when necessary. This approach maintained positive stakeholder relationships while ensuring the CEO's productivity in a remote work setting.</p>
+                </div>
+            </div>
+        </div>
+        
+        <h2 class="section-title">Part 4: Video Briefing (Bonus)</h2>
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-video"></i> Executive Briefing Video</h2>
+            </div>
+            <div class="card-content">
+                <div class="video-container">
+                    <iframe src="https://www.loom.com/embed/9488ca17d0c04d2db0b9f73be1638325?sid=a132f7eb-1553-4904-a087-a39a5f3fcdcb" 
+                            frameborder="0" 
+                            webkitallowfullscreen 
+                            mozallowfullscreen 
+                            allowfullscreen>
+                    </iframe>
+                </div>
+                <div class="video-info">
+                    <h3>Remote Schedule Optimization Walkthrough</h3>
+                    <p>This video provides a comprehensive walkthrough of the strategic approach to optimizing the CEO's remote schedule, handling conflicting requests, and maintaining priority alignment in a virtual setting.</p>
+                    <a href="https://www.loom.com/share/9488ca17d0c04d2db0b9f73be1638325?sid=a132f7eb-1553-4904-a087-a39a5f3fcdcb" class="btn" target="_blank">
+                        <i class="fas fa-play"></i> Watch on Loom
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Executive Schedule Optimization Dashboard • Professional Remote Executive Support</p>
+        </div>
+    </div>
+</body>
+</html>
